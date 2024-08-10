@@ -62,10 +62,12 @@ class ArmCalibration(Node):
                 self.save_offsets()
             elif char == 'o':  # Open gripper
                 self.send_gripper_velocity(self.gripper_velocity)
+                self.gripper_active = True
             elif char == 'p':  # Close gripper
                 self.send_gripper_velocity(-self.gripper_velocity)
+                self.gripper_active = True
             elif char in ['o', 'p']:  # Stop gripper on release
-                self.send_gripper_velocity(0.0)
+                self.gripper_active = False
             elif char == '+':
                 self.increment += 0.1
                 self.get_logger().info(f"Increment increased to {self.increment:.2f}")
@@ -92,21 +94,20 @@ class ArmCalibration(Node):
     def send_gripper_velocity(self, velocity):
         velocity_msg = Float64()
         velocity_msg.data = velocity
-        
         self.gripper_velocity_publisher.publish(velocity_msg)
         self.get_logger().info(f"Sent gripper velocity command: {velocity:.2f}")
-
-        if velocity != 0.0:
-            self.gripper_active = True  # Set active if velocity command is not zero
+        
+        # Immediately send a stop command to ensure the gripper stops
+        stop_msg = Float64()
+        stop_msg.data = 0.0
+        self.gripper_velocity_publisher.publish(stop_msg)
+        self.get_logger().info("Sent gripper stop command: 0.0")
 
     def check_gripper_activity(self):
-        if not self.gripper_active:  # If gripper is not active, send 0.0 velocity
-            velocity_msg = Float64()
-            velocity_msg.data = 0.0
-            self.gripper_velocity_publisher.publish(velocity_msg)
-            self.get_logger().info("Gripper velocity set to 0.0 due to inactivity.")
-        else:
-            self.gripper_active = False  # Reset the active flag for the next check
+        self.get_logger().info("Gripper Activity being called")
+        if not self.gripper_active:  # If no active command, send 0.0 velocity
+            self.send_gripper_velocity(0.0)
+        self.gripper_active = False  # Reset the active flag for the next check
 
     def save_offsets(self):
         self.get_logger().info("Saving offsets...")
