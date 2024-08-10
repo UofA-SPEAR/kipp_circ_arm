@@ -19,7 +19,8 @@ class ArmCalibration(Node):
             'joint_3': 0.0,
             'joint_4': 0.0,
             'joint_5': 0.0,
-            'joint_6': 0.0
+            'joint_6': 0.0,
+            'gripper_joint': 0.0
         }
         self.offsets = {key: 0.0 for key in self.known_positions.keys()}
         self.relative_positions = {key: 0.0 for key in self.known_positions.keys()}
@@ -39,17 +40,33 @@ class ArmCalibration(Node):
             if char == 'c':
                 self.calibration_mode = not self.calibration_mode
                 self.get_logger().info(f"Calibration mode {'enabled' if self.calibration_mode else 'disabled'}.")
-            elif char in '123456':
-                self.current_joint = f'joint_{char}'
-                self.get_logger().info(f"Selected {self.current_joint}.")
+            elif char in '1234567':
+                if char == '7':
+                    self.current_joint = 'gripper_joint'
+                else:
+                    self.current_joint = f'joint_{char}'
+                
+                # Reset the increment to default when changing joints
+                self.increment = 0.4
+                if self.current_joint == 'gripper_joint':
+                    self.increment = 0.1
+                    
+                self.get_logger().info(f"Selected {self.current_joint}. Increment: {self.increment:.2f} rad")
             elif char == 'i' and self.calibration_mode:
                 self.send_incremental_command(self.current_joint, self.increment)
             elif char == 'd' and self.calibration_mode:
                 self.send_incremental_command(self.current_joint, -self.increment)
             elif char == 's' and self.calibration_mode:
                 self.save_offsets()
+            elif char == '+':
+                self.increment += 0.1
+                self.get_logger().info(f"Increment increased to {self.increment:.2f} rad")
+            elif char == '-':
+                self.increment = max(0.1, self.increment - 0.1)  # Prevent decrement below 0.1
+                self.get_logger().info(f"Increment decreased to {self.increment:.2f} rad")
             elif char == 'q':
                 break
+
 
     def send_incremental_command(self, joint, increment):
         # Calculate the new position
