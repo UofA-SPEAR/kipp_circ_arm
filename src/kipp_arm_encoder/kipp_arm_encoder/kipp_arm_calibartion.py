@@ -32,8 +32,11 @@ class ArmCalibration(Node):
         
         self.create_subscription(JointState, '/raw/joint_states', self.joint_state_callback, 10)
         
-        self.get_logger().info("Press 'c' to toggle calibration mode. Use '1' to '6' to select joints. Use 'i' to increment and 'd' to decrement position. Press 's' to save offsets.")
+        self.get_logger().info("Press 'c' to toggle calibration mode. Use '1' to '6' to select joints.")
+        self.get_logger().info("Use 'i' to increment and 'd' to decrement position.")
+        self.get_logger().info("Press 's' to save offsets.")
         self.get_logger().info("Press 'o' to open the gripper and 'p' to close the gripper. Release the key to stop.")
+        self.get_logger().info("Use '+' to increase increment value and '-' to decrease it. Current increment: 0.4")
         
         self.keyboard_input()
 
@@ -59,6 +62,12 @@ class ArmCalibration(Node):
                 self.send_gripper_velocity(-self.gripper_velocity)
             elif char in ['o', 'p']:  # Stop gripper on release
                 self.send_gripper_velocity(0.0)
+            elif char == '+':
+                self.increment += 0.1
+                self.get_logger().info(f"Increment increased to {self.increment:.2f}")
+            elif char == '-':
+                self.increment = max(0.1, self.increment - 0.1)
+                self.get_logger().info(f"Increment decreased to {self.increment:.2f}")
             elif char == 'q':
                 break
 

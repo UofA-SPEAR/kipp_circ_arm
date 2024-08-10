@@ -38,7 +38,7 @@ class GripperCANControl(Node):
         # Construct arbitration ID
         priority = 0x0
         command_id = 0x03  # Assuming 0x03 for drive command
-        receiver_node_id = 26  # Motor 26
+        receiver_node_id = 21  # Motor 26
         sender_node_id = 1
         arbitration_id = priority << 24 | command_id << 16 | receiver_node_id << 8 | sender_node_id
 
