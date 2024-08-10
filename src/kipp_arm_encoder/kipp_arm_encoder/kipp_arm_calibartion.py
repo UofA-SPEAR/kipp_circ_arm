@@ -2,17 +2,18 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from std_msgs.msg import Float64  # Import Float64 message type
+from std_msgs.msg import Float64
 import sys
 import termios
 import tty
+import threading
 
 class ArmCalibration(Node):
     def __init__(self):
         super().__init__('arm_calibration')
         
         self.joint_trajectory_publisher = self.create_publisher(JointTrajectory, '/arm_controller/joint_trajectory', 10)
-        self.gripper_velocity_publisher = self.create_publisher(Float64, '/gripper_controller/velocity', 10)  # Publisher for gripper velocity
+        self.gripper_velocity_publisher = self.create_publisher(Float64, '/gripper_controller/velocity', 10)
         
         self.calibration_mode = False
         self.known_positions = {
@@ -29,7 +30,10 @@ class ArmCalibration(Node):
         self.current_joint = 'joint_1'
         self.increment = 0.4
         self.gripper_velocity = 0.2  # Default velocity value for the gripper
-        
+
+        self.gripper_active = False  # Track if the gripper is currently active
+        self.gripper_stop_timer = self.create_timer(0.1, self.check_gripper_activity)  # Check every 100 ms
+
         self.create_subscription(JointState, '/raw/joint_states', self.joint_state_callback, 10)
         
         self.get_logger().info("Press 'c' to toggle calibration mode. Use '1' to '6' to select joints.")
@@ -72,43 +76,44 @@ class ArmCalibration(Node):
                 break
 
     def send_incremental_command(self, joint, increment):
-        # Calculate the new position
         new_position = self.known_positions[joint] + increment
-        
-        # Update the known position
         self.known_positions[joint] = new_position
         
-        # Create a JointTrajectory message to move the arm
         joint_trajectory = JointTrajectory()
         joint_trajectory.joint_names = [joint]
         point = JointTrajectoryPoint()
         point.positions = [new_position]
-        point.time_from_start.sec = 1  # Adjust as needed for smooth movement
+        point.time_from_start.sec = 1
         joint_trajectory.points = [point]
         
-        # Publish the trajectory to move the joint
         self.joint_trajectory_publisher.publish(joint_trajectory)
         self.get_logger().info(f"Sent command to {joint}: {new_position:.2f} rad")
 
     def send_gripper_velocity(self, velocity):
-        # Create a Float64 message to set gripper velocity
         velocity_msg = Float64()
         velocity_msg.data = velocity
         
-        # Publish the velocity command
         self.gripper_velocity_publisher.publish(velocity_msg)
         self.get_logger().info(f"Sent gripper velocity command: {velocity:.2f}")
+
+        if velocity != 0.0:
+            self.gripper_active = True  # Set active if velocity command is not zero
+
+    def check_gripper_activity(self):
+        if not self.gripper_active:  # If gripper is not active, send 0.0 velocity
+            velocity_msg = Float64()
+            velocity_msg.data = 0.0
+            self.gripper_velocity_publisher.publish(velocity_msg)
+            self.get_logger().info("Gripper velocity set to 0.0 due to inactivity.")
+        else:
+            self.gripper_active = False  # Reset the active flag for the next check
 
     def save_offsets(self):
         self.get_logger().info("Saving offsets...")
         for joint, known_position in self.known_positions.items():
-            # Calculate the offset based on the difference between known and current positions
             offset = self.relative_positions[joint] - known_position
             self.offsets[joint] = offset
             self.get_logger().info(f"Offset for {joint}: {offset:.2f} rad")
-
-        # Optionally, save offsets to a file or parameter server for future use
-        # self.save_to_file(self.offsets)
 
     def joint_state_callback(self, msg):
         for name, pos in zip(msg.name, msg.position):
