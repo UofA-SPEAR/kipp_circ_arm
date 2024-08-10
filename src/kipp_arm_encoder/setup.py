@@ -26,6 +26,9 @@ setup(
         'console_scripts': [
             'kipp_arm_can = kipp_arm_encoder.kipp_arm_can:main',
             'kipp_arm_calibrate = kipp_arm_encoder.kipp_arm_calibartion:main'
+            'kipp_arm_gripper = kipp_arm_encoder.kipp_gripper_can:main'
+
+            
         ],
     },
 )
