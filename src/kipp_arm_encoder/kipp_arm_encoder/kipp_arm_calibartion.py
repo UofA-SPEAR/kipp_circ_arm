@@ -59,10 +59,6 @@ class ArmCalibration(Node):
                 self.send_incremental_command(self.current_joint, self.increment)
             elif char == 'd' and self.calibration_mode:
                 self.send_incremental_command(self.current_joint, -self.increment)
-            elif char == 'q':
-                self.send_linked_joint_command(-self.increment)
-            elif char == 'w':
-                self.send_linked_joint_command(self.increment)
             elif char == 's' and self.calibration_mode:
                 self.save_offsets()
             elif char == 'o':  # Open gripper
@@ -81,26 +77,6 @@ class ArmCalibration(Node):
                 self.get_logger().info(f"Increment decreased to {self.increment:.2f}")
             elif char == 'q':
                 break
-
-    def send_linked_joint_command(self, increment):
-        new_position_joint_2 = self.known_positions['joint_2'] + increment
-        new_position_joint_3 = self.known_positions['joint_3'] + (increment * 1.27)
-
-        self.known_positions['joint_2'] = new_position_joint_2
-        self.known_positions['joint_3'] = new_position_joint_3
-
-        joint_trajectory = JointTrajectory()
-        joint_trajectory.joint_names = ['joint_2', 'joint_3']
-
-        point = JointTrajectoryPoint()
-        point.positions = [new_position_joint_2, new_position_joint_3]
-        point.time_from_start.sec = 1
-
-        joint_trajectory.points = [point]
-
-        self.joint_trajectory_publisher.publish(joint_trajectory)
-        self.get_logger().info(f"Sent command to joint_2: {new_position_joint_2:.2f} rad, joint_3: {new_position_joint_3:.2f} rad")
-
 
     def send_incremental_command(self, joint, increment):
         new_position = self.known_positions[joint] + increment
@@ -122,9 +98,8 @@ class ArmCalibration(Node):
         self.gripper_velocity_publisher.publish(velocity_msg)
         self.get_logger().info(f"Sent gripper velocity command: {velocity:.2f}")
         
-        # Introduce a short delay
-        time.sleep(0.1)  # Pause for 100 milliseconds
-        
+        time.sleep(0.1) 
+
         # Immediately send a stop command to ensure the gripper stops
         stop_msg = Float64()
         stop_msg.data = 0.0
