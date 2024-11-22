@@ -1,0 +1,7 @@
+<launch>
+  <!-- Load robot description parameter -->
+  <param name="robot_description" command="cat $(find <your_package_name>)/urdf/<your_robot.urdf>" />
+
+  <!-- Start RViz -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find <your_package_name>)/rviz/view_urdf.rviz" output="screen"/>
+</launch>
