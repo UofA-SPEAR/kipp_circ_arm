@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'servo_test = kipp_arm_bringup.moveit_node:main',
         ],
     },
 )

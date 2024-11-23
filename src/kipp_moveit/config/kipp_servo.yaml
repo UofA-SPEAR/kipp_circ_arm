@@ -1,0 +1,17 @@
+servo_node:
+  ros__parameters:
+    use_gazebo: false
+    robot_description: "src/kipp_arm_description/urdf/SPEAR_Arm.urdf"  # Replace with your URDF if needed
+    command_in_type: "geometry_msgs/TwistStamped"
+    linear_scale: 1.0
+    angular_scale: 1.0
+    planning_frame: "base_link"
+    ee_frame_name: "link5"  # Replace with your end-effector frame name
+    publish_joint_positions: true
+    publish_joint_velocities: false
+    publish_joint_accelerations: false
+    low_pass_filter_coeff: 2.0
+    joint_topic: "/joint_states"
+    command_out_topic: "/servo_node/delta_twist_cmds"
+    cartesian_command_in_topic: "/servo_node/commands"
+    status_topic: "/servo_node/status"
